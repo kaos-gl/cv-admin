@@ -1,0 +1,150 @@
+<div class="section-page">
+
+  <!-- Toast -->
+  @if (toast) {
+    <div class="toast" [class.toast--success]="toast.type === 'success'" [class.toast--error]="toast.type === 'error'">
+      <span class="toast__icon">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
+      {{ toast.message }}
+    </div>
+  }
+
+  <!-- Header -->
+  <div class="section-header">
+    <div class="section-title">
+      <span class="section-icon">{{ section?.icon }}</span>
+      <h1>{{ section?.label }}</h1>
+      <span class="section-count">{{ items.length }}</span>
+    </div>
+    <button class="btn btn--primary" (click)="openCreate()">
+      <span>+</span> New {{ section?.label | slice:0:-1 }}
+    </button>
+  </div>
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="loading-grid">
+      <div class="skeleton" *ngFor="let i of [1,2,3]"></div>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @else if (items.length === 0) {
+    <div class="empty-state">
+      <div class="empty-state__icon">{{ section?.icon }}</div>
+      <p>No {{ section?.label }} yet.</p>
+      <button class="btn btn--primary" (click)="openCreate()">Add your first one</button>
+    </div>
+  }
+
+  <!-- Items grid -->
+  @else {
+    <div class="items-grid">
+      @for (item of items; track trackById($index, item)) {
+        <div class="item-card">
+          @if (deleteConfirmId === item.id) {
+            <div class="delete-confirm">
+              <p>Delete this item?</p>
+              <div class="delete-confirm__actions">
+                <button class="btn btn--danger btn--sm" (click)="deleteItem(item.id)">Delete</button>
+                <button class="btn btn--ghost btn--sm" (click)="cancelDelete()">Cancel</button>
+              </div>
+            </div>
+          } @else {
+            <div class="item-card__content">
+              <div class="item-card__text">
+                <span class="item-card__primary">{{ getPreview(item) }}</span>
+                @if (getSubPreview(item)) {
+                  <span class="item-card__secondary">{{ getSubPreview(item) }}</span>
+                }
+              </div>
+              <div class="item-card__actions">
+                <button class="btn-icon btn-icon--edit" (click)="openEdit(item)" title="Edit">✏️</button>
+                <button class="btn-icon btn-icon--delete" (click)="confirmDelete(item.id)" title="Delete">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Skill bar (special case) -->
+            @if (section?.path === 'skills' && item.percentaje) {
+              <div class="skill-bar">
+                <div class="skill-bar__fill" [style.width.%]="item.percentaje"></div>
+              </div>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal Form -->
+  @if (showForm) {
+    <div class="modal-backdrop" (click)="closeForm()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h2>{{ editingId ? 'Edit' : 'New' }} {{ section?.label | slice:0:-1 }}</h2>
+          <button class="modal__close" (click)="closeForm()">✕</button>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="modal__form">
+          @for (field of section?.fields; track field.key; let i = $index) {
+            <div class="form-group">
+              <label [for]="field.key">
+                {{ field.label }}
+                @if (field.required) { <span class="required">*</span> }
+              </label>
+
+              @if (field.type === 'textarea') {
+                <textarea
+                  [id]="field.key"
+                  [formControlName]="field.key"
+                  [placeholder]="field.placeholder || ''"
+                  [rows]="field.rows || 3"
+                  [class.form-control--error]="hasError(field.key, 'required')"
+                ></textarea>
+              } @else {
+                <input
+                  [id]="i === 0 ? 'first-field' : field.key"
+                  [type]="field.type"
+                  [formControlName]="field.key"
+                  [placeholder]="field.placeholder || ''"
+                  [min]="field.min"
+                  [max]="field.max"
+                  [class.form-control--error]="hasError(field.key, 'required')"
+                />
+              }
+
+              @if (hasError(field.key, 'required')) {
+                <span class="form-error">{{ field.label }} is required</span>
+              }
+              @if (hasError(field.key, 'min') || hasError(field.key, 'max')) {
+                <span class="form-error">Value must be between {{ field.min }} and {{ field.max }}</span>
+              }
+              @if (hasError(field.key, 'email')) {
+                <span class="form-error">Enter a valid email</span>
+              }
+
+              <!-- Number visual slider -->
+              @if (field.type === 'number' && field.max) {
+                <div class="number-preview">
+                  <div class="number-preview__bar">
+                    <div class="number-preview__fill"
+                      [style.width.%]="(form.get(field.key)?.value || 0) / field.max * 100">
+                    </div>
+                  </div>
+                  <span>{{ form.get(field.key)?.value || 0 }}%</span>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="modal__footer">
+            <button type="button" class="btn btn--ghost" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn btn--primary" [disabled]="saving">
+              @if (saving) { <span class="spinner"></span> }
+              {{ editingId ? 'Update' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

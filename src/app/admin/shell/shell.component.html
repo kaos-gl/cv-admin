@@ -1,0 +1,51 @@
+<div class="shell" [class.sidebar-open]="sidebarOpen">
+
+  <!-- Sidebar overlay (mobile) -->
+  @if (sidebarOpen) {
+    <div class="sidebar-overlay" (click)="closeSidebar()"></div>
+  }
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">⚙️</span>
+      <span class="sidebar__title">CV Admin</span>
+    </div>
+
+    <nav class="sidebar__nav">
+      <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}"
+         class="nav-item" (click)="closeSidebar()">
+        <span>🏠</span> Dashboard
+      </a>
+
+      <div class="nav-section-label">Sections</div>
+
+      @for (section of sections; track section.path) {
+        <a [routerLink]="['/admin/section', section.path]" routerLinkActive="active"
+           class="nav-item" (click)="closeSidebar()">
+          <span>{{ section.icon }}</span> {{ section.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__footer">
+      <button class="btn btn--ghost btn--sm btn--full" (click)="auth.logout()">
+        🚪 Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main-wrapper">
+    <!-- Top bar (mobile) -->
+    <header class="topbar">
+      <button class="topbar__menu" (click)="toggleSidebar()">☰</button>
+      <span class="topbar__title">CV Admin</span>
+      <button class="btn btn--ghost btn--sm" (click)="auth.logout()">Sign Out</button>
+    </header>
+
+    <main class="main-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

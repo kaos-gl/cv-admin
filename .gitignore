@@ -1,0 +1,20 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+
+# Angular build output
+dist/
+.angular/
+
+# Environment (NEVER commit real Firebase keys)
+src/environments/environment.prod.ts
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp

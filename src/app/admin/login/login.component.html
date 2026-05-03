@@ -1,0 +1,47 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-card__header">
+      <div class="login-card__logo">⚙️</div>
+      <h1>CV Admin</h1>
+      <p>Sign in to manage your CV content</p>
+    </div>
+
+    @if (error) {
+      <div class="alert alert--error">{{ error }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" placeholder="admin@example.com"
+          [class.form-control--error]="form.get('email')?.invalid && form.get('email')?.touched" />
+        @if (form.get('email')?.hasError('required') && form.get('email')?.touched) {
+          <span class="form-error">Email is required</span>
+        }
+        @if (form.get('email')?.hasError('email') && form.get('email')?.touched) {
+          <span class="form-error">Enter a valid email</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrapper">
+          <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password"
+            placeholder="••••••••"
+            [class.form-control--error]="form.get('password')?.invalid && form.get('password')?.touched" />
+          <button type="button" class="input-wrapper__toggle" (click)="showPassword = !showPassword">
+            {{ showPassword ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        @if (form.get('password')?.hasError('required') && form.get('password')?.touched) {
+          <span class="form-error">Password is required</span>
+        }
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--full" [disabled]="loading">
+        @if (loading) { <span class="spinner"></span> }
+        Sign In
+      </button>
+    </form>
+  </div>
+</div>
