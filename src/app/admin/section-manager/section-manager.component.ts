@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CrudService } from '../../services/crud.service';
 import { CV_SECTIONS } from '../../models/section.config';
-import { SectionConfig, FieldConfig } from '../../models/cv.models';
+import { SectionConfig } from '../../models/cv.models';
 
 @Component({
   selector: 'app-section-manager',
@@ -23,6 +23,7 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
   saving = false;
   deleteConfirmId: string | null = null;
   toast: { message: string; type: 'success' | 'error' } | null = null;
+  singleDocId: string | null = null;
 
   private sub!: Subscription;
 
@@ -37,30 +38,47 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
       const found = CV_SECTIONS.find((s) => s.path === section);
       if (!found) return;
       this.section = found;
-      this.loadItems();
       this.buildForm();
+      if (this.section.singleDocument) {
+        this.loadSingleDocument();
+      } else {
+        this.loadItems();
+      }
     });
   }
 
-  // ── DATA ──────────────────────────────────────────────────────────────────
   loadItems() {
     this.loading = true;
     if (this.sub) this.sub.unsubscribe();
     this.sub = this.crud
       .getAll(this.section.path, this.section.orderField)
       .subscribe({
-        next: (data) => {
-          this.items = data;
-          this.loading = false;
-        },
-        error: () => {
-          this.showToast('Error loading data', 'error');
-          this.loading = false;
-        },
+        next: (data) => { this.items = data; this.loading = false; },
+        error: () => { this.showToast('Error cargando datos', 'error'); this.loading = false; },
       });
   }
 
-  // ── FORM ──────────────────────────────────────────────────────────────────
+  loadSingleDocument() {
+    this.loading = true;
+    if (this.sub) this.sub.unsubscribe();
+    this.sub = this.crud.getAll(this.section.path).subscribe({
+      next: (data) => {
+        this.loading = false;
+        if (data.length > 0) {
+          const doc = data[0];
+          this.singleDocId = doc['id'];
+          const patchVal: Record<string, any> = {};
+          this.section.fields.forEach((f) => (patchVal[f.key] = doc[f.key] ?? ''));
+          this.form.patchValue(patchVal);
+        } else {
+          this.singleDocId = null;
+        }
+        this.showForm = true;
+      },
+      error: () => { this.showToast('Error cargando perfil', 'error'); this.loading = false; },
+    });
+  }
+
   buildForm() {
     const controls: Record<string, any> = {};
     this.section.fields.forEach((field) => {
@@ -92,62 +110,69 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
   }
 
   closeForm() {
+    if (this.section?.singleDocument) return;
     this.showForm = false;
     this.editingId = null;
     this.form.reset();
   }
 
   async submit() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving = true;
     const data = this.form.value;
-
     try {
-      if (this.editingId) {
+      if (this.section.singleDocument) {
+        if (this.singleDocId) {
+          await this.crud.update(this.section.path, this.singleDocId, data).toPromise();
+        } else {
+          const newId = await this.crud.create(this.section.path, data).toPromise();
+          this.singleDocId = newId ?? null;
+        }
+        this.showToast('Perfil actualizado ✓', 'success');
+      } else if (this.editingId) {
         await this.crud.update(this.section.path, this.editingId, data).toPromise();
-        this.showToast(`${this.section.label} updated successfully`, 'success');
+        this.showToast('Actualizado correctamente ✓', 'success');
+        this.closeForm();
       } else {
         await this.crud.create(this.section.path, data).toPromise();
-        this.showToast(`${this.section.label} created successfully`, 'success');
+        this.showToast('Creado correctamente ✓', 'success');
+        this.closeForm();
       }
-      this.closeForm();
     } catch (e) {
-      this.showToast('Error saving. Please try again.', 'error');
+      this.showToast('Error al guardar. Intenta de nuevo.', 'error');
     } finally {
       this.saving = false;
     }
   }
 
-  // ── DELETE ────────────────────────────────────────────────────────────────
-  confirmDelete(id: string) {
-    this.deleteConfirmId = id;
-  }
+  confirmDelete(id: string) { this.deleteConfirmId = id; }
 
   async deleteItem(id: string) {
     try {
       await this.crud.delete(this.section.path, id).toPromise();
-      this.showToast('Item deleted', 'success');
+      this.showToast('Eliminado', 'success');
     } catch {
-      this.showToast('Error deleting item', 'error');
+      this.showToast('Error al eliminar', 'error');
     } finally {
       this.deleteConfirmId = null;
     }
   }
 
-  cancelDelete() {
-    this.deleteConfirmId = null;
-  }
+  cancelDelete() { this.deleteConfirmId = null; }
 
-  // ── HELPERS ───────────────────────────────────────────────────────────────
   getPreview(item: any): string {
     const f = this.section.fields[0];
-    return item[f.key] ?? '—';
+    const val = item[f.key] ?? '—';
+    if (this.section.path === 'languages') {
+      const f2 = this.section.fields[1];
+      const val2 = f2 ? (item[f2.key] ?? '') : '';
+      return val2 ? `${val} — ${val2}` : val;
+    }
+    return val;
   }
 
   getSubPreview(item: any): string {
+    if (this.section.path === 'languages') return '';
     const f = this.section.fields[1];
     if (!f) return '';
     const val = item[f.key];
@@ -160,16 +185,12 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
     return !!ctrl && ctrl.hasError(error) && ctrl.touched;
   }
 
-  trackById(_: number, item: any) {
-    return item.id;
-  }
+  trackById(_: number, item: any) { return item.id; }
 
   showToast(message: string, type: 'success' | 'error') {
     this.toast = { message, type };
-    setTimeout(() => (this.toast = null), 3000);
+    setTimeout(() => (this.toast = null), 3500);
   }
 
-  ngOnDestroy() {
-    if (this.sub) this.sub.unsubscribe();
-  }
+  ngOnDestroy() { if (this.sub) this.sub.unsubscribe(); }
 }

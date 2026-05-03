@@ -633,3 +633,28 @@ input.form-control--error, textarea.form-control--error { border-color: var(--er
   .items-grid { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── SINGLE DOCUMENT (Perfil) ────────────────────────────────────────────── */
+.single-doc-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  max-width: 600px;
+}
+.single-doc-hint {
+  font-size: 0.83rem;
+  color: var(--text-2);
+  margin-bottom: 24px;
+  padding: 10px 14px;
+  background: var(--bg-3);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+}
+.single-doc-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}

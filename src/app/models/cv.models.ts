@@ -65,6 +65,7 @@ export interface SectionConfig {
   icon: string;
   fields: FieldConfig[];
   orderField?: string;
+  singleDocument?: boolean; // true = un solo doc (ej. Header), false = lista
 }
 
 export interface FieldConfig {

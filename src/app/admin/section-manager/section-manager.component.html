@@ -8,16 +8,20 @@
     </div>
   }
 
-  <!-- Header -->
+  <!-- Header de sección -->
   <div class="section-header">
     <div class="section-title">
       <span class="section-icon">{{ section?.icon }}</span>
       <h1>{{ section?.label }}</h1>
-      <span class="section-count">{{ items.length }}</span>
+      @if (!section?.singleDocument) {
+        <span class="section-count">{{ items.length }}</span>
+      }
     </div>
-    <button class="btn btn--primary" (click)="openCreate()">
-      <span>+</span> New {{ section?.label | slice:0:-1 }}
-    </button>
+    @if (!section?.singleDocument) {
+      <button class="btn btn--primary" (click)="openCreate()">
+        <span>+</span> Agregar
+      </button>
+    }
   </div>
 
   <!-- Loading -->
@@ -27,26 +31,76 @@
     </div>
   }
 
-  <!-- Empty state -->
-  @else if (items.length === 0) {
-    <div class="empty-state">
-      <div class="empty-state__icon">{{ section?.icon }}</div>
-      <p>No {{ section?.label }} yet.</p>
-      <button class="btn btn--primary" (click)="openCreate()">Add your first one</button>
+  <!-- ═══ MODO SINGLE DOCUMENT (Perfil / Header) ════════════════════════════ -->
+  @else if (section?.singleDocument) {
+    <div class="single-doc-card">
+      <p class="single-doc-hint">Este formulario edita directamente la información de tu perfil en el CV.</p>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="modal__form">
+        @for (field of section?.fields; track field.key; let i = $index) {
+          <div class="form-group">
+            <label [for]="field.key">
+              {{ field.label }}
+              @if (field.required) { <span class="required">*</span> }
+            </label>
+
+            @if (field.type === 'textarea') {
+              <textarea
+                [id]="field.key"
+                [formControlName]="field.key"
+                [placeholder]="field.placeholder || ''"
+                [rows]="field.rows || 3"
+                [class.form-control--error]="hasError(field.key, 'required')"
+              ></textarea>
+            } @else {
+              <input
+                [id]="field.key"
+                [type]="field.type"
+                [formControlName]="field.key"
+                [placeholder]="field.placeholder || ''"
+                [class.form-control--error]="hasError(field.key, 'required')"
+              />
+            }
+
+            @if (hasError(field.key, 'required')) {
+              <span class="form-error">{{ field.label }} es requerido</span>
+            }
+            @if (hasError(field.key, 'email')) {
+              <span class="form-error">Ingresa un email válido</span>
+            }
+            @if (hasError(field.key, 'pattern') && field.type === 'url') {
+              <span class="form-error">La URL debe comenzar con https://</span>
+            }
+          </div>
+        }
+        <div class="single-doc-footer">
+          <button type="submit" class="btn btn--primary" [disabled]="saving">
+            @if (saving) { <span class="spinner"></span> }
+            {{ singleDocId ? 'Guardar cambios' : 'Crear perfil' }}
+          </button>
+        </div>
+      </form>
     </div>
   }
 
-  <!-- Items grid -->
+  <!-- ═══ MODO LISTA (todas las demás secciones) ════════════════════════════ -->
+  @else if (items.length === 0) {
+    <div class="empty-state">
+      <div class="empty-state__icon">{{ section?.icon }}</div>
+      <p>Aún no hay elementos en esta sección.</p>
+      <button class="btn btn--primary" (click)="openCreate()">Agregar el primero</button>
+    </div>
+  }
+
   @else {
     <div class="items-grid">
       @for (item of items; track trackById($index, item)) {
         <div class="item-card">
           @if (deleteConfirmId === item.id) {
             <div class="delete-confirm">
-              <p>Delete this item?</p>
+              <p>¿Eliminar este elemento?</p>
               <div class="delete-confirm__actions">
-                <button class="btn btn--danger btn--sm" (click)="deleteItem(item.id)">Delete</button>
-                <button class="btn btn--ghost btn--sm" (click)="cancelDelete()">Cancel</button>
+                <button class="btn btn--danger btn--sm" (click)="deleteItem(item.id)">Eliminar</button>
+                <button class="btn btn--ghost btn--sm" (click)="cancelDelete()">Cancelar</button>
               </div>
             </div>
           } @else {
@@ -58,12 +112,11 @@
                 }
               </div>
               <div class="item-card__actions">
-                <button class="btn-icon btn-icon--edit" (click)="openEdit(item)" title="Edit">✏️</button>
-                <button class="btn-icon btn-icon--delete" (click)="confirmDelete(item.id)" title="Delete">🗑️</button>
+                <button class="btn-icon btn-icon--edit" (click)="openEdit(item)" title="Editar">✏️</button>
+                <button class="btn-icon btn-icon--delete" (click)="confirmDelete(item.id)" title="Eliminar">🗑️</button>
               </div>
             </div>
 
-            <!-- Skill bar (special case) -->
             @if (section?.path === 'skills' && item.percentaje) {
               <div class="skill-bar">
                 <div class="skill-bar__fill" [style.width.%]="item.percentaje"></div>
@@ -75,12 +128,12 @@
     </div>
   }
 
-  <!-- Modal Form -->
-  @if (showForm) {
+  <!-- ═══ MODAL (solo para modo lista) ════════════════════════════════════════ -->
+  @if (showForm && !section?.singleDocument) {
     <div class="modal-backdrop" (click)="closeForm()">
       <div class="modal" (click)="$event.stopPropagation()">
         <div class="modal__header">
-          <h2>{{ editingId ? 'Edit' : 'New' }} {{ section?.label | slice:0:-1 }}</h2>
+          <h2>{{ editingId ? 'Editar' : 'Nuevo' }} {{ section?.label }}</h2>
           <button class="modal__close" (click)="closeForm()">✕</button>
         </div>
 
@@ -113,16 +166,15 @@
               }
 
               @if (hasError(field.key, 'required')) {
-                <span class="form-error">{{ field.label }} is required</span>
+                <span class="form-error">{{ field.label }} es requerido</span>
               }
               @if (hasError(field.key, 'min') || hasError(field.key, 'max')) {
-                <span class="form-error">Value must be between {{ field.min }} and {{ field.max }}</span>
+                <span class="form-error">El valor debe estar entre {{ field.min }} y {{ field.max }}</span>
               }
               @if (hasError(field.key, 'email')) {
-                <span class="form-error">Enter a valid email</span>
+                <span class="form-error">Ingresa un email válido</span>
               }
 
-              <!-- Number visual slider -->
               @if (field.type === 'number' && field.max) {
                 <div class="number-preview">
                   <div class="number-preview__bar">
@@ -137,14 +189,15 @@
           }
 
           <div class="modal__footer">
-            <button type="button" class="btn btn--ghost" (click)="closeForm()">Cancel</button>
+            <button type="button" class="btn btn--ghost" (click)="closeForm()">Cancelar</button>
             <button type="submit" class="btn btn--primary" [disabled]="saving">
               @if (saving) { <span class="spinner"></span> }
-              {{ editingId ? 'Update' : 'Create' }}
+              {{ editingId ? 'Actualizar' : 'Crear' }}
             </button>
           </div>
         </form>
       </div>
     </div>
   }
+
 </div>
