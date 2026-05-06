@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CrudService } from '../../services/crud.service';
@@ -14,7 +14,6 @@ import { SectionConfig } from '../../models/cv.models';
   templateUrl: './section-manager.component.html',
 })
 export class SectionManagerComponent implements OnInit, OnDestroy {
-  // --- VARIABLES DE CLASE (Asegúrate de que estén aquí arriba) ---
   section!: SectionConfig;
   items: any[] = [];
   form!: FormGroup;
@@ -25,6 +24,7 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
   deleteConfirmId: string | null = null;
   toast: { message: string; type: 'success' | 'error' } | null = null;
   singleDocId: string | null = null;
+
   private sub!: Subscription;
 
   constructor(
@@ -50,25 +50,23 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
   loadItems() {
     this.loading = true;
     if (this.sub) this.sub.unsubscribe();
-    this.sub = this.crud
-      .getAll(this.section.path, this.section.orderField)
-      .subscribe({
-        next: (data) => { this.items = data; this.loading = false; },
-        error: () => { this.showToast('Error cargando datos', 'error'); this.loading = false; },
-      });
+    this.sub = this.crud.getAll(this.section.path, this.section.orderField).subscribe({
+      next: (data) => { this.items = data; this.loading = false; },
+      error: () => { this.showToast('Error cargando datos', 'error'); this.loading = false; },
+    });
   }
 
   loadSingleDocument() {
     this.loading = true;
     if (this.sub) this.sub.unsubscribe();
     this.sub = this.crud.getAll(this.section.path).subscribe({
-      next: (data: any[]) => {
+      next: (data) => {
         this.loading = false;
         if (data.length > 0) {
-          const doc = data[0];
-          this.singleDocId = (doc as any)['id'];
+          const docData = data[0];
+          this.singleDocId = docData['id'];
           const patchVal: Record<string, any> = {};
-          this.section.fields.forEach((f) => (patchVal[f.key] = (doc as any)[f.key] ?? ''));
+          this.section.fields.forEach((f) => (patchVal[f.key] = docData[f.key] ?? ''));
           this.form.patchValue(patchVal);
         } else {
           this.singleDocId = null;
@@ -81,33 +79,62 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
 
   buildForm() {
     const controls: Record<string, any> = {};
-    // CORRECCIÓN: Bucle limpio para crear controles del formulario
-    this.section.fields.forEach((field: any) => {
-      const validators = field.required ? [Validators.required] : [];
-      if (field.type === 'number') {
-        if (field.min !== undefined) validators.push(Validators.min(field.min));
-        if (field.max !== undefined) validators.push(Validators.max(field.max));
+    this.section.fields.forEach((field) => {
+      if (field.type === 'array') {
+        controls[field.key] = this.fb.array([this.fb.control('')]);
+      } else {
+        const validators = field.required ? [Validators.required] : [];
+        if (field.type === 'number') {
+          if (field.min !== undefined) validators.push(Validators.min(field.min));
+          if (field.max !== undefined) validators.push(Validators.max(field.max));
+        }
+        if (field.type === 'email') validators.push(Validators.email);
+        if (field.type === 'url') validators.push(Validators.pattern(/^https?:\/\/.+/));
+        controls[field.key] = [field.type === 'number' ? 0 : '', validators];
       }
-      if (field.type === 'email') validators.push(Validators.email);
-      if (field.type === 'url') validators.push(Validators.pattern(/^https?:\/\/.+/));
-      
-      controls[field.key] = [field.type === 'number' ? 0 : '', validators];
     });
     this.form = this.fb.group(controls);
   }
 
+  // ── Métodos para campos tipo array ────────────────────────────────────────
+  getFormArray(key: string): FormArray {
+    return this.form.get(key) as FormArray;
+  }
+
+  addArrayItem(key: string) {
+    this.getFormArray(key).push(this.fb.control(''));
+  }
+
+  removeArrayItem(key: string, index: number) {
+    const arr = this.getFormArray(key);
+    if (arr.length > 1) arr.removeAt(index);
+  }
+
   openCreate() {
     this.editingId = null;
-    this.form.reset();
+    this.buildForm();
     this.showForm = true;
     setTimeout(() => document.getElementById('first-field')?.focus(), 100);
   }
 
   openEdit(item: any) {
     this.editingId = item.id;
-    const patchVal: Record<string, any> = {};
-    this.section.fields.forEach((f) => (patchVal[f.key] = (item as any)[f.key] ?? ''));
-    this.form.patchValue(patchVal);
+    this.buildForm();
+    this.section.fields.forEach((f) => {
+      if (f.type === 'array') {
+        const arr = this.getFormArray(f.key);
+        const values: string[] = Array.isArray(item[f.key]) ? item[f.key] : [];
+        // Limpiar y rellenar el FormArray
+        while (arr.length) arr.removeAt(0);
+        if (values.length > 0) {
+          values.forEach((v) => arr.push(this.fb.control(v)));
+        } else {
+          arr.push(this.fb.control(''));
+        }
+      } else {
+        this.form.get(f.key)?.setValue(item[f.key] ?? '');
+      }
+    });
     this.showForm = true;
   }
 
@@ -115,20 +142,30 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
     if (this.section?.singleDocument) return;
     this.showForm = false;
     this.editingId = null;
-    this.form.reset();
+    this.buildForm();
   }
 
   async submit() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving = true;
-    const data = this.form.value;
+
+    // Construir el objeto final convirtiendo FormArrays a arrays reales
+    const data: Record<string, any> = {};
+    this.section.fields.forEach((f) => {
+      if (f.type === 'array') {
+        data[f.key] = this.getFormArray(f.key).value.filter((v: string) => v.trim() !== '');
+      } else {
+        data[f.key] = this.form.get(f.key)?.value;
+      }
+    });
+
     try {
       if (this.section.singleDocument) {
         if (this.singleDocId) {
           await this.crud.update(this.section.path, this.singleDocId, data).toPromise();
         } else {
           const newId = await this.crud.create(this.section.path, data).toPromise();
-          this.singleDocId = (newId as any) ?? null;
+          this.singleDocId = newId ?? null;
         }
         this.showToast('Perfil actualizado ✓', 'success');
       } else if (this.editingId) {
@@ -162,25 +199,29 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
 
   cancelDelete() { this.deleteConfirmId = null; }
 
-getPreview(item: any): string {
-  const f = this.section.fields[0];
-  const val = item[f.key] ?? '—';
-  if (this.section.path === 'languages') {
-    const f2 = this.section.fields[1];
-    const val2 = f2 ? (item[f2.key] ?? '') : '';
-    return val2 ? `${val} — ${val2}` : val;
+  getPreview(item: any): string {
+    const f = this.section.fields[0];
+    const val = item[f.key] ?? '—';
+    if (this.section.path === 'languages') {
+      const f2 = this.section.fields[1];
+      const val2 = f2 ? (item[f2.key] ?? '') : '';
+      return val2 ? `${val} — ${val2}` : val;
+    }
+    return val;
   }
-  return val;
-}
 
-getSubPreview(item: any): string {
-  if (this.section.path === 'languages') return '';
-  const f = this.section.fields[1];
-  if (!f) return '';
-  const val = item[f.key];
-  if (f.type === 'number') return `${val}%`;
-  return val ?? '';
-}
+  getSubPreview(item: any): string {
+    if (this.section.path === 'languages') return '';
+    const f = this.section.fields[1];
+    if (!f) return '';
+    if (f.type === 'array') {
+      const arr = item[f.key];
+      return Array.isArray(arr) ? `${arr.length} logros` : '';
+    }
+    const val = item[f.key];
+    if (f.type === 'number') return `${val}%`;
+    return val ?? '';
+  }
 
   hasError(key: string, error: string): boolean {
     const ctrl = this.form.get(key);
@@ -188,6 +229,7 @@ getSubPreview(item: any): string {
   }
 
   trackById(_: number, item: any) { return item.id; }
+  trackByIndex(index: number) { return index; }
 
   showToast(message: string, type: 'success' | 'error') {
     this.toast = { message, type };

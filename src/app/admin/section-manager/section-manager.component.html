@@ -1,6 +1,5 @@
 <div class="section-page">
 
-  <!-- Toast -->
   @if (toast) {
     <div class="toast" [class.toast--success]="toast.type === 'success'" [class.toast--error]="toast.type === 'error'">
       <span class="toast__icon">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
@@ -8,7 +7,6 @@
     </div>
   }
 
-  <!-- Header de sección -->
   <div class="section-header">
     <div class="section-title">
       <span class="section-icon">{{ section?.icon }}</span>
@@ -24,51 +22,31 @@
     }
   </div>
 
-  <!-- Loading -->
   @if (loading) {
     <div class="loading-grid">
       <div class="skeleton" *ngFor="let i of [1,2,3]"></div>
     </div>
   }
 
-  <!-- ═══ MODO SINGLE DOCUMENT (Perfil / Header) ════════════════════════════ -->
   @else if (section?.singleDocument) {
     <div class="single-doc-card">
       <p class="single-doc-hint">Este formulario edita directamente la información de tu perfil en el CV.</p>
       <form [formGroup]="form" (ngSubmit)="submit()" class="modal__form">
-        @for (field of section?.fields; track field.key; let i = $index) {
+        @for (field of section?.fields; track field.key) {
           <div class="form-group">
             <label [for]="field.key">
               {{ field.label }}
               @if (field.required) { <span class="required">*</span> }
             </label>
-
             @if (field.type === 'textarea') {
-              <textarea
-                [id]="field.key"
-                [formControlName]="field.key"
-                [placeholder]="field.placeholder || ''"
-                [rows]="field.rows || 3"
-                [class.form-control--error]="hasError(field.key, 'required')"
-              ></textarea>
+              <textarea [id]="field.key" [formControlName]="field.key"
+                [placeholder]="field.placeholder || ''" [rows]="field.rows || 3"></textarea>
             } @else {
-              <input
-                [id]="field.key"
-                [type]="field.type"
-                [formControlName]="field.key"
-                [placeholder]="field.placeholder || ''"
-                [class.form-control--error]="hasError(field.key, 'required')"
-              />
+              <input [id]="field.key" [type]="field.type" [formControlName]="field.key"
+                [placeholder]="field.placeholder || ''" />
             }
-
             @if (hasError(field.key, 'required')) {
               <span class="form-error">{{ field.label }} es requerido</span>
-            }
-            @if (hasError(field.key, 'email')) {
-              <span class="form-error">Ingresa un email válido</span>
-            }
-            @if (hasError(field.key, 'pattern') && field.type === 'url') {
-              <span class="form-error">La URL debe comenzar con https://</span>
             }
           </div>
         }
@@ -82,7 +60,6 @@
     </div>
   }
 
-  <!-- ═══ MODO LISTA (todas las demás secciones) ════════════════════════════ -->
   @else if (items.length === 0) {
     <div class="empty-state">
       <div class="empty-state__icon">{{ section?.icon }}</div>
@@ -116,7 +93,6 @@
                 <button class="btn-icon btn-icon--delete" (click)="confirmDelete(item.id)" title="Eliminar">🗑️</button>
               </div>
             </div>
-
             @if (section?.path === 'skills' && item.percentaje) {
               <div class="skill-bar">
                 <div class="skill-bar__fill" [style.width.%]="item.percentaje"></div>
@@ -128,7 +104,6 @@
     </div>
   }
 
-  <!-- ═══ MODAL (solo para modo lista) ════════════════════════════════════════ -->
   @if (showForm && !section?.singleDocument) {
     <div class="modal-backdrop" (click)="closeForm()">
       <div class="modal" (click)="$event.stopPropagation()">
@@ -145,14 +120,35 @@
                 @if (field.required) { <span class="required">*</span> }
               </label>
 
-              @if (field.type === 'textarea') {
-                <textarea
-                  [id]="field.key"
+              @if (field.type === 'array') {
+                <!-- Campo dinámico tipo lista -->
+                <div class="array-field">
+                  @for (ctrl of getFormArray(field.key).controls; track trackByIndex($index); let ai = $index) {
+                    <div class="array-item">
+                      <input
+                        [formControl]="$any(ctrl)"
+                        [placeholder]="field.placeholder || 'Escribe un elemento...'"
+                        type="text"
+                      />
+                      <button type="button" class="btn-icon btn-icon--delete"
+                        (click)="removeArrayItem(field.key, ai)"
+                        [disabled]="getFormArray(field.key).length === 1">
+                        ✕
+                      </button>
+                    </div>
+                  }
+                  <button type="button" class="btn btn--ghost btn--sm array-add"
+                    (click)="addArrayItem(field.key)">
+                    + Agregar logro
+                  </button>
+                </div>
+
+              } @else if (field.type === 'textarea') {
+                <textarea [id]="i === 0 ? 'first-field' : field.key"
                   [formControlName]="field.key"
                   [placeholder]="field.placeholder || ''"
                   [rows]="field.rows || 3"
-                  [class.form-control--error]="hasError(field.key, 'required')"
-                ></textarea>
+                  [class.form-control--error]="hasError(field.key, 'required')"></textarea>
               } @else {
                 <input
                   [id]="i === 0 ? 'first-field' : field.key"
@@ -174,13 +170,11 @@
               @if (hasError(field.key, 'email')) {
                 <span class="form-error">Ingresa un email válido</span>
               }
-
               @if (field.type === 'number' && field.max) {
                 <div class="number-preview">
                   <div class="number-preview__bar">
                     <div class="number-preview__fill"
-                      [style.width.%]="(form.get(field.key)?.value || 0) / field.max * 100">
-                    </div>
+                      [style.width.%]="(form.get(field.key)?.value || 0) / field.max * 100"></div>
                   </div>
                   <span>{{ form.get(field.key)?.value || 0 }}%</span>
                 </div>

@@ -71,8 +71,8 @@ export interface SectionConfig {
 export interface FieldConfig {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'textarea' | 'date' | 'url' | 'email' | 'tel';
-  placeholder?: string;
+ type: 'text' | 'number' | 'textarea' | 'date' | 'url' | 'email' | 'tel';
+ placeholder?: string;
   min?: number;
   max?: number;
   rows?: number;

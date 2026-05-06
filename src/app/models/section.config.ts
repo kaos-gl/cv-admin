@@ -38,8 +38,7 @@ export const CV_SECTIONS: SectionConfig[] = [
       { key: 'location',       label: 'Ubicación',       type: 'text',     placeholder: 'CDMX, México' },
       { key: 'startDate',      label: 'Fecha inicio',    type: 'text',     placeholder: 'Ene 2022' },
       { key: 'endDate',        label: 'Fecha fin',       type: 'text',     placeholder: 'Presente' },
-{ key: 'accomplishments', label: 'Logros (separa con |)', type: 'textarea', rows: 4,
-  placeholder: 'Logro 1 | Logro 2 | Logro 3' },
+      { key: 'accomplishments', label: 'Logros', type: 'array', placeholder: 'Describe un logro...' },
     ],
   },
   {
