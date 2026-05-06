@@ -663,4 +663,3 @@ input.form-control--error, textarea.form-control--error { border-color: var(--er
 .array-item { display: flex; gap: 8px; align-items: center; }
 .array-item input { flex: 1; }
 .array-add { align-self: flex-start; margin-top: 4px; }
-EOF
