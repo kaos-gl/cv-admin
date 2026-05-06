@@ -19,7 +19,17 @@ import { map } from 'rxjs/operators';
 export class CrudService {
   constructor(private firestore: Firestore) {}
 
-  // ── READ ──────────────────────────────────────────────────────────────────
+  private processData(data: any): any {
+    const processed = { ...data };
+    if (processed['accomplishments'] && typeof processed['accomplishments'] === 'string') {
+      processed['accomplishments'] = processed['accomplishments']
+        .split('|')
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0);
+    }
+    return processed;
+  }
+
   getAll<T>(collectionPath: string, orderField?: string): Observable<(T & { id: string })[]> {
     const ref = collection(this.firestore, collectionPath);
     const q = orderField ? query(ref, orderBy(orderField)) : ref;
@@ -31,21 +41,18 @@ export class CrudService {
     return docData(ref, { idField: 'id' }) as Observable<T & { id: string }>;
   }
 
-  // ── CREATE ────────────────────────────────────────────────────────────────
   create<T extends object>(collectionPath: string, data: T): Observable<string> {
     const ref = collection(this.firestore, collectionPath);
-    const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    const payload = { ...this.processData(data), createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
     return from(addDoc(ref, payload)).pipe(map((docRef) => docRef.id));
   }
 
-  // ── UPDATE ────────────────────────────────────────────────────────────────
   update<T extends object>(collectionPath: string, id: string, data: Partial<T>): Observable<void> {
     const ref = doc(this.firestore, `${collectionPath}/${id}`);
-    const payload = { ...data, updatedAt: serverTimestamp() };
+    const payload = { ...this.processData(data), updatedAt: serverTimestamp() };
     return from(updateDoc(ref, payload as any));
   }
 
-  // ── DELETE ────────────────────────────────────────────────────────────────
   delete(collectionPath: string, id: string): Observable<void> {
     const ref = doc(this.firestore, `${collectionPath}/${id}`);
     return from(deleteDoc(ref));
