@@ -113,7 +113,7 @@
         </div>
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="modal__form">
-          @for (field of section?.fields; track field.key; let i = $index) {
+          @for (field of section.fields; track field.key; let i = $index) {
             <div class="form-group">
               <label [for]="field.key">
                 {{ field.label }}

@@ -66,7 +66,7 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
           const docData = data[0];
           this.singleDocId = docData['id'];
           const patchVal: Record<string, any> = {};
-          this.section.fields.forEach((f) => (patchVal[f.key] = docData[f.key] ?? ''));
+         this.section.fields.forEach((f) => (patchVal[f.key] = (docData as any)[f.key] ?? ''));
           this.form.patchValue(patchVal);
         } else {
           this.singleDocId = null;
