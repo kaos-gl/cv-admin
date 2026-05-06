@@ -162,25 +162,25 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
 
   cancelDelete() { this.deleteConfirmId = null; }
 
-  getPreview(item: any): string {
-    const f = this.section.fields[0];
-    const val = (item as any)[f.key] ?? '—';
-    if (this.section.path === 'languages') {
-      const f2 = this.section.fields[1];
-      const val2 = f2 ? ((item as any)[f2.key] ?? '') : '';
-      return val2 ? `${val} — ${val2}` : val;
-    }
-    return val;
+getPreview(item: any): string {
+  const f = this.section.fields[0];
+  const val = item[f.key] ?? '—';
+  if (this.section.path === 'languages') {
+    const f2 = this.section.fields[1];
+    const val2 = f2 ? (item[f2.key] ?? '') : '';
+    return val2 ? `${val} — ${val2}` : val;
   }
+  return val;
+}
 
-  getSubPreview(item: any): string {
-    if (this.section.path === 'languages') return '';
-    const f = this.section.fields[1];
-    if (!f) return '';
-    const val = (item as any)[f.key];
-    if (f.type === 'number') return `${val}%`;
-    return val ?? '';
-  }
+getSubPreview(item: any): string {
+  if (this.section.path === 'languages') return '';
+  const f = this.section.fields[1];
+  if (!f) return '';
+  const val = item[f.key];
+  if (f.type === 'number') return `${val}%`;
+  return val ?? '';
+}
 
   hasError(key: string, error: string): boolean {
     const ctrl = this.form.get(key);

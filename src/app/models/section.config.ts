@@ -73,13 +73,13 @@ export const CV_SECTIONS: SectionConfig[] = [
       { key: 'name', label: 'Interés', type: 'text', placeholder: 'Open Source', required: true },
     ],
   },
-  {
-    label: 'Idiomas',
-    path: 'languages',
-    icon: '🌐',
-    fields: [
-      { key: 'language1', label: 'Idioma', type: 'text', placeholder: 'Español', required: true },
-      { key: 'language2', label: 'Nivel',  type: 'text', placeholder: 'Nativo' },
-    ],
-  },
+{
+  label: 'Idiomas',
+  path: 'languages',
+  icon: '🌐',
+  fields: [
+    { key: 'language1', label: 'Idioma', type: 'text', placeholder: 'Español', required: true },
+    { key: 'language2', label: 'Nivel',  type: 'text', placeholder: 'Nativo' },
+  ],
+},
 ];
