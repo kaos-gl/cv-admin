@@ -10,7 +10,12 @@ export const CV_SECTIONS: SectionConfig[] = [
     fields: [
       { key: 'name',          label: 'Nombre completo',  type: 'text',     placeholder: 'Elon Musk',              required: true },
       { key: 'goalLife',      label: 'Descripción / Bio',type: 'textarea', placeholder: 'Ingeniero apasionado...', rows: 4, required: true },
-      { key: 'photoURL',      label: 'URL de la foto',   type: 'url',      placeholder: 'https://...' },
+      { 
+        key: 'photoURL',      
+        label: 'Foto de Perfil',   
+        type: 'image',    // ¡MODIFICADO! Ahora es 'image' para que uses Cloudinary aquí también
+        placeholder: 'Sube tu foto' 
+      },
       { key: 'email',         label: 'Email',            type: 'email',    placeholder: 'tu@email.com' },
       { key: 'phoneNumber',   label: 'Teléfono',         type: 'tel',      placeholder: '+52 999 999 9999' },
       { key: 'location',      label: 'Ubicación',        type: 'text',     placeholder: 'CDMX, México' },
@@ -62,6 +67,12 @@ export const CV_SECTIONS: SectionConfig[] = [
       { key: 'title',       label: 'Título',       type: 'text',     placeholder: 'AWS Solutions Architect', required: true },
       { key: 'Description', label: 'Descripción',  type: 'textarea', rows: 2, placeholder: 'Emitido por...' },
       { key: 'year',        label: 'Año',          type: 'text',     placeholder: '2024' },
+      // 👇 ¡NUEVO CAMPO AGREGADO! 👇
+      { 
+        key: 'imagenUrl',   
+        label: 'Imagen del Certificado',  
+        type: 'image' 
+      }
     ],
   },
   {
@@ -73,13 +84,13 @@ export const CV_SECTIONS: SectionConfig[] = [
       { key: 'name', label: 'Interés', type: 'text', placeholder: 'Open Source', required: true },
     ],
   },
-{
-  label: 'Idiomas',
-  path: 'languages',
-  icon: '🌐',
-  fields: [
-    { key: 'language1', label: 'Idioma', type: 'text', placeholder: 'Español', required: true },
-    { key: 'language2', label: 'Nivel',  type: 'text', placeholder: 'Nativo' },
-  ],
-},
+  {
+    label: 'Idiomas',
+    path: 'languages',
+    icon: '🌐',
+    fields: [
+      { key: 'language1', label: 'Idioma', type: 'text', placeholder: 'Español', required: true },
+      { key: 'language2', label: 'Nivel',  type: 'text', placeholder: 'Nativo' },
+    ],
+  },
 ];

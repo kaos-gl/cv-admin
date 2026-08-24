@@ -31,6 +31,7 @@ export interface Certificate {
   title: string;
   Description: string; // keeping original casing from CV
   year: string;
+  imagenUrl?: string; // ¡NUEVO: Para tu certificado de Kaggle!
 }
 
 // ── INTEREST ──────────────────────────────────────────────────────────────
@@ -71,8 +72,9 @@ export interface SectionConfig {
 export interface FieldConfig {
   key: string;
   label: string;
- type: 'text' | 'number' | 'textarea' | 'date' | 'url' | 'email' | 'tel'|'array';
- placeholder?: string;
+  // ¡CORREGIDO: Agregamos 'image' al final!
+  type: 'text' | 'number' | 'textarea' | 'date' | 'url' | 'email' | 'tel' | 'array' | 'image';
+  placeholder?: string;
   min?: number;
   max?: number;
   rows?: number;
