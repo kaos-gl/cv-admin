@@ -258,8 +258,8 @@ export class SectionManagerComponent implements OnInit, OnDestroy {
     this.subiendoImagen = true;
 
     // Pon aquí tus credenciales de Cloudinary
-    const uploadPreset = 'TU_UPLOAD_PRESET'; 
-    const cloudName = 'TU_CLOUD_NAME';
+    const uploadPreset = 'cv_certificados'; 
+    const cloudName = 'dhrrvvuux';
     
     const data = new FormData();
     data.append('file', file);
